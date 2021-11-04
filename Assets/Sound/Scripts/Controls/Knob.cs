@@ -3,10 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-public class ReadOnlyAttribute : PropertyAttribute {
-
-}
-
 [RequireComponent(typeof(BoxCollider2D))]
 public class Knob : MonoBehaviour {
 
