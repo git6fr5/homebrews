@@ -17,10 +17,10 @@ public class Controller : MonoBehaviour {
 
     /* --- Properties --- */
     // Action Controls
-    [SerializeField] [ReadOnly] protected float moveSpeed; // The internal speed at which this entity is moving.
-    [SerializeField] [ReadOnly] protected Vector2 movementVector; // The internal movement control.
-    [SerializeField] [ReadOnly] protected Vector2 momentumVector; // The external movement control.
-    [SerializeField] [ReadOnly] protected Vector2 orientationVector; // The direction this entity is facing.
+    [SerializeField] [ReadOnly] public float moveSpeed; // The internal speed at which this entity is moving.
+    [SerializeField] [ReadOnly] public Vector2 movementVector; // The internal movement control.
+    [SerializeField] [ReadOnly] public Vector2 momentumVector; // The external movement control.
+    [SerializeField] [ReadOnly] public Vector2 orientationVector; // The direction this entity is facing.
 
     /* --- Unity --- */
     // Runs once on instantiation.

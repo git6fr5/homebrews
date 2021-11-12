@@ -7,115 +7,46 @@ using UnityEngine;
 public class Mob : Controller {
 
     /* --- Enumerations --- */
-    public enum Behaviour {
-        Idle,
-        Move,
-        Attack
-    }
+
+    /* --- Dictionary --- */
+    public List<Behaviour> behaviourCycle = new List<Behaviour>();
 
     /* --- Components --- */
     [SerializeField] [ReadOnly] public State state;
 
     /* --- Properties --- */
-    [SerializeField] [ReadOnly] private Behaviour behaviour;
-    [SerializeField] [ReadOnly] private Vector2 targetPoint;
+    [SerializeField] [ReadOnly] private int behaviourIndex;
+    [SerializeField] [ReadOnly] public Vector2 targetPoint;
 
     /* --- Unity --- */
     void Start() {
         // Cache these references.
         state = GetComponent<State>();
+        behaviourCycle = SetBehaviourCycle();
+        behaviourCycle[behaviourIndex].OnBehaviour();
     }
 
     /* --- Override --- */
     protected override void Think() {
 
-        Behaviour newBehaviour = DecideBehaviour();
-        OnBehaviour(newBehaviour);
-        WhileBehaviour(newBehaviour);
+        DecideBehaviour();
+        if (behaviourIndex < behaviourCycle.Count) {
+            behaviourCycle[behaviourIndex].WhileBehaviour();
+        }
 
     }
 
-    private void OnBehaviour(Behaviour newBehaviour) {
-        if (behaviour != newBehaviour) {
-
-            switch (newBehaviour) {
-
-                case (Behaviour.Idle):
-                    OnIdle();
-                    return;
-                case (Behaviour.Move):
-                    OnMove();
-                    return;
-                case (Behaviour.Attack):
-                    OnAttack();
-                    return;
-            }
-
+    private void DecideBehaviour() {
+        if (behaviourCycle.Count > 0 && behaviourCycle[behaviourIndex].EndCondition()) {
+            print("Ending Behaviour");
+            behaviourIndex = (behaviourIndex + 1) % behaviourCycle.Count;
+            behaviourCycle[behaviourIndex].OnBehaviour();
         }
     }
 
-    private void WhileBehaviour(Behaviour behaviour) {
-
-        switch (behaviour) {
-
-            case (Behaviour.Idle):
-                WhileIdle();
-                return;
-            case (Behaviour.Move):
-                WhileMove();
-                return;
-            case (Behaviour.Attack):
-                WhileAttack();
-                return;
-        }
-    }
-
-    /* --- Methods --- */
-    protected virtual Behaviour DecideBehaviour() {
-        return Behaviour.Move;
-    }
-
-    private void OnMove() {
-        targetPoint = GetTargetPoint();
-    }
-
-    private void WhileMove() {
-        moveSpeed = GetMoveSpeed();
-        movementVector = GetMovementVector();
-        orientationVector = GetOrientation();
-    }
-
-    private void OnAttack() {
-
-    }
-
-    private void WhileAttack() {
-        //IndicateAttack();
-        //PerformAttack();
-    }
-
-    private void OnIdle() {
-
-    }
-
-    private void WhileIdle() {
-    }
-
-    /* --- Virtual --- */
-    protected virtual Vector2 GetTargetPoint() {
-        return transform.position;
-    }
-
-    protected virtual float GetMoveSpeed() {
-        return state.baseSpeed;
-    }
-
-    protected virtual Vector2 GetMovementVector() {
-        return Vector2.right;
-    }
-
-    protected virtual Vector2 GetOrientation() {
-        return Vector2.right;
+    protected virtual List<Behaviour> SetBehaviourCycle() {
+        //
+        return new List<Behaviour>();
     }
 
 }
