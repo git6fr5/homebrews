@@ -52,10 +52,17 @@ public class Behaviour {
 
     }
 
-    public class Movement : Behaviour {
+    public class Movement : Behaviour, IDirection {
 
         public Movement(Mob mob) : base(mob) {
             this.mob = mob;
+        }
+
+        public override void OnBehaviour() {
+            // Get the target point.
+            int distance = GetDistance();
+            Vector2 direction = GetDirection();
+            mob.targetPoint = (Vector2)mob.transform.position + direction;
         }
 
         public override void WhileBehaviour() {
@@ -72,6 +79,10 @@ public class Behaviour {
             return false;
         }
 
+        public virtual int GetDistance() {
+            return 1;
+        }
+
     }
 
     public class FixedDistance : Movement {
@@ -82,11 +93,13 @@ public class Behaviour {
             this.distance = distance
         }
 
+        public override int GetDistance() {
+            return distance;
+        }
     }
 
     public class RandomDistance : Movement {
 
-        public int distance => Random.Range(minDistance, maxDistance);
         public int minDistance;
         public int maxDistance;
         public RandomDistance(Mob mob, int minDistance, int maxDistance) : base(mob) {
@@ -95,25 +108,16 @@ public class Behaviour {
             this.maxDistance = maxDistance;
         }
 
+        public override int GetDistance() {
+            return Random.Range(minDistance, maxDistance);
+        }
+
     }
 
-    public class FixedCardinalMovement : FixedDistance {
+    interface IDirection {
 
-        public FixedCardinalMovement(Mob mob, int distance) {
-            this.mob = mob;
-            this.distance = distance;
-        }
-
-        public override void OnBehaviour() {
-            // Get the target point.
+        public override void GetDirection() {
             Vector2 direction = State.OrientationVectors[(State.Orientation)Random.Range(0, 4)];
-            mob.targetPoint = (Vector2)mob.transform.position + distance * direction;
-        }
-
-        public override void WhileBehaviour() {
-            mob.moveSpeed = mob.state.baseSpeed;
-            mob.movementVector = (mob.targetPoint - (Vector2)mob.transform.position).normalized;
-            mob.orientationVector = mob.movementVector;
         }
 
     }
