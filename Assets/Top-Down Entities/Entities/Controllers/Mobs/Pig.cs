@@ -10,7 +10,7 @@ public class Pig : Mob {
 
         Behaviour idle = new Behaviour.Idle(this, 1f);
         // Behaviour move = new Behaviour.RangedCardinalMovement(this, 1, 3);
-        Behaviour move = new Behaviour.FixedDiagonalMovement(this, 2, 1);
+        Behaviour move = new Behaviour.FixedDiagonalMovement(this, 0, 1);
 
         List<Behaviour> newBehaviourCycle = new List<Behaviour>();
         newBehaviourCycle.Add(idle);
