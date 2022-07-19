@@ -19,7 +19,7 @@ namespace Monet {
             Count 
         }
 
-        public static Dictionary<Note, float> KeyFrequencies = new Dictionary<Note, float>() {
+        public static Dictionary<Key, float> KeyFrequencies = new Dictionary<Key, float>() {
             { Key.A, 440f },
             { Key.B, 493.88f },
             { Key.C, 523.25f },

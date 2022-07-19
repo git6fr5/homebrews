@@ -4,183 +4,189 @@ using UnityEngine;
 using UnityEditor;
 using Monet;
 
-/// <summary>
-/// 
-/// </summary>
-public class Wave : MonoBehaviour {
+namespace Monet {
 
-    public Shape WaveShape;
+    /// <summary>
+    /// 
+    /// </summary>
+    public class Wave : MonoBehaviour {
 
-    [SerializeField] public Distribution distributionA;
-    public float[] Overtones;
+        [SerializeField] private WaveShape m_Shape;
+        public WaveShape Shape => m_Shape;
 
-    [SerializeField] private Modifier m_Volume;
-    [SerializeField] private Modifier m_Attack;
-    [SerializeField] private Modifier m_Sustain;
-    [SerializeField] private Modifier m_Decay;
-    
-    // Wave Adders.
-    private delegate float WaveFunction(float fundamental, float time);
-    private WaveFunction m_WaveFuntion;
-    public int octaveShift;
-    
-    public void GetWave() {
-        switch (Shape) {
-            case Shape.Sine:
-                m_WaveFuntion = new WaveFunction(SineFunction);
-                break;
-            case Shape.Square:
-                m_WaveFuntion = new WaveFunction(SquareFunction);
-                break;
-            case Shape.Triangle:
-                m_WaveFuntion = new WaveFunction(NoiseFunction);
-                break;
-            default:
-                break;
+        [SerializeField] private Distribution m_Overtones;
+        public Distribution Overtones => m_Overtones;
+
+        [SerializeField] private Modifier m_Volume;
+        public Modifier Volume => m_Volume;
+        [SerializeField] private Modifier m_Attack;
+        public Modifier Attack => m_Attack;
+        [SerializeField] private Modifier m_Sustain;
+        public Modifier Sustain => m_Sustain;
+        [SerializeField] private Modifier m_Decay;
+        public Modifier Decay => m_Decay;
+        
+        // Wave Adders.
+        private delegate float WaveFunction(float fundamental, float time);
+        private WaveFunction DelegatedWaveFuntion;
+
+        [SerializeField] private int m_OctaveShift;
+        public int OctaveShift => m_OctaveShift;
+
+        void Start() {
+            m_Overtones.Reset();
         }
 
-        m_Volume = m_VolumeKnob.Value * MaxVolume;
-        m_Attack = m_AttackKnob.value * MaxAttack;
-        m_Sustain = m_SustainKnob.value * MaxSustain;
-        m_Decay = m_DecayKnob.value * maxDecay;
-        Overtones = distributionA.GetValues();
-
-    }
-
-    public float[] Generate(int packetSize, int channels, int timeOffset, float sampleRate, float fundamental, bool shiftOctave = true, bool addModifiers = true) {
-
-        // Get the octave.
-        if (shiftOctave) {
-            float octaveFactor = ((octaveShift >= 0) ? Mathf.Pow(2, octaveShift) : 1f / Mathf.Pow(2, Mathf.Abs(octaveShift)));
-            fundamental *= octaveFactor;
+        void Update() {
+            m_Volume.OnUpdate();
+            m_Attack.OnUpdate();
+            m_Sustain.OnUpdate();
+            m_Decay.OnUpdate();
+            Overtones.OnUpdate();
         }
 
-        // Debug.Log(sampleRate);
-        float[] wavePacket = new float[packetSize];
-
-        // Itterate through the data.
-        for (int i = 0; i < packetSize; i += channels) {
-            float time = (float)(timeOffset + i) / (float)sampleRate / (float)channels;
-
-            float value = m_WaveFuntion(fundamental, time);
-
-            // Put that value into both the channels.
-            for (int j = 0; j < channels; j++) {
-                wavePacket[i + j] = value;
+        public void SetShape(WaveShape shape) {
+            m_Shape = shape;
+            
+            switch (m_Shape) {
+                case WaveShape.Sine:
+                    DelegatedWaveFuntion = new WaveFunction(SineFunction);
+                    break;
+                case WaveShape.Square:
+                    DelegatedWaveFuntion = new WaveFunction(SquareFunction);
+                    break;
+                case WaveShape.Triangle:
+                    DelegatedWaveFuntion = new WaveFunction(TriangleFunction);
+                    break;
+                default:
+                    break;
             }
         }
 
-        Modify(wavePacket, channels, timeOffset, sampleRate, addModifiers);
+        public void ShiftOctave(int shift) {
+            m_OctaveShift += shift;
+        }
+        
+        public void GetWave() {
+            // Overtones = distributionA.GetValues();
+        }
 
-        return wavePacket;
-    }
+        public float[] Generate(int packetSize, int channels, int timeOffset, float sampleRate, float fundamental, bool shiftOctave = true, bool modify = true) {
 
-    public float[] Modify(float[] data, int channels, int timeOffset, float sampleRate, bool addModifiers) {
+            // Get the octave.
+            if (shiftOctave) {
+                float octaveFactor = ((m_OctaveShift >= 0) ? Mathf.Pow(2, m_OctaveShift) : 1f / Mathf.Pow(2, Mathf.Abs(m_OctaveShift)));
+                fundamental *= octaveFactor;
+            }
 
-        float attack = m_Attack.Value;
-        float sustain = m_Sustain.Value;
-        float decay = m_Decay.Value;
-        float volume = m_Volume.Value;
+            // Debug.Log(sampleRate);
+            float[] wavePacket = new float[packetSize];
 
-        // Apply the modifiers
-        for (int i = 0; i < data.Length; i += channels) {
-            float time = (float)(i + timeOffset) / (float)sampleRate / (float)channels;
+            // Itterate through the data.
+            for (int i = 0; i < packetSize; i += channels) {
+                float time = (float)(timeOffset + i) / (float)sampleRate / (float)channels;
 
-            if (addModifiers) {
-                if (time < attack) {
-                    volume *= Mathf.Pow((time / attack), 2);
+                float value = DelegatedWaveFuntion(fundamental, time);
+
+                // Put that value into both the channels.
+                for (int j = 0; j < channels; j++) {
+                    wavePacket[i + j] = value;
                 }
-                if (time > sustain) {
-                    volume *= Mathf.Exp(-decay * (time - sustain));
+            }
+
+            Modify(wavePacket, channels, timeOffset, sampleRate, modify);
+
+            return wavePacket;
+        }
+
+        public float[] Modify(float[] data, int channels, int timeOffset, float sampleRate, bool modify) {
+
+            float attack = m_Attack.Value;
+            float sustain = m_Sustain.Value;
+            float decay = m_Decay.Value;
+            float volume = m_Volume.Value;
+
+            // Apply the modifiers
+            for (int i = 0; i < data.Length; i += channels) {
+                float time = (float)(i + timeOffset) / (float)sampleRate / (float)channels;
+
+                if (modify) {
+                    if (time < attack) {
+                        volume *= Mathf.Pow((time / attack), 2);
+                    }
+                    if (time > sustain) {
+                        volume *= Mathf.Exp(-decay * (time - sustain));
+                    }
                 }
+
+                for (int j = 0; j < channels; j++) {
+                    data[i + j] *= volume;
+                }
+
             }
 
-            for (int j = 0; j < channels; j++) {
-                data[i + j] *= volume;
+            return data;
+
+        }
+
+        public void Load(WaveData data) {
+            m_Shape = data.Shape;
+            m_OctaveShift = data.OctaveShift;
+            m_Volume.Load(data.Volume);
+            m_Attack.Load(data.Attack);
+            m_Sustain.Load(data.Sustain);
+            m_Decay.Load(data.Decay);
+        }
+
+        #region Hide
+
+        private float SineFunction(float fundamental, float time) {
+            // Get the value for this index.
+            float value = 0f;
+            for (int i = 0; i < Overtones.Values.Length; i++) {
+                // The factors for this overtone.
+                float volumeFactor = Overtones.Values[i];
+                float frequency = fundamental * (i + 1);
+                value += volumeFactor * Mathf.Sin(time * 2 * Mathf.PI * frequency);
             }
 
+            return value;
         }
 
-        return data;
+        private float SquareFunction(float fundamental, float time) {
+            // Get the value for this index.
+            float value = 0f;
+            for (int i = 0; i < Overtones.Values.Length; i++) {
+                // The factors for this overtone.
+                float volumeFactor = Overtones.Values[i];
+                float frequency = fundamental * (i + 1);
+                float period = 1 / frequency;
+                value += (time % period < period / 2f) ? volumeFactor : -volumeFactor;
+            }
 
-    }
-
-    #region Hide
-
-    private float SineFunction(float fundamental, float time) {
-        // Get the value for this index.
-        float value = 0f;
-        for (int i = 0; i < Overtones.Length; i++) {
-            // The factors for this overtone.
-            float volumeFactor = Overtones[i];
-            float frequency = fundamental * (i + 1);
-            value += volumeFactor * Mathf.Sin(time * 2 * Mathf.PI * frequency);
+            return value;
         }
 
-        return value;
-    }
+        private float TriangleFunction(float fundamental, float time) {
+            // Get the value for this index.
+            float value = 0f;
+            for (int i = 0; i < Overtones.Values.Length; i++) {
+                // The factors for this overtone.
+                float volumeFactor = Overtones.Values[i];
+                float frequency = fundamental * (i + 1);
+                float period = 1 / frequency;
 
-    private float SquareFunction(float fundamental, float time) {
-        // Get the value for this index.
-        float value = 0f;
-        for (int i = 0; i < Overtones.Length; i++) {
-            // The factors for this overtone.
-            float volumeFactor = Overtones[i];
-            float frequency = fundamental * (i + 1);
-            float period = 1 / frequency;
-            value += (time % period < period / 2f) ? volumeFactor : -volumeFactor;
+                float sign = (time % period < period / 2f) ? 1f : -1f;
+                float offset = sign * -volumeFactor;
+
+                value += offset + sign * (time % (period / 2f) / (period / 2f)) * 2f * volumeFactor;
+            }
+
+            return value;
         }
 
-        return value;
-    }
-
-    private float TriangleFunction(float fundamental, float time) {
-        // Get the value for this index.
-        float value = 0f;
-        for (int i = 0; i < Overtones.Length; i++) {
-            // The factors for this overtone.
-            float volumeFactor = Overtones[i];
-            float frequency = fundamental * (i + 1);
-            float period = 1 / frequency;
-
-            float sign = (time % period < period / 2f) ? 1f : -1f;
-            float offset = sign * -volumeFactor;
-
-            value += offset + sign * (time % (period / 2f) / (period / 2f)) * 2f * volumeFactor;
-        }
-
-        return value;
-    }
-
-    private float NoiseFunction(float fundamental, float time) {
-        // Get the value for this index.
-        float value = 0f;       
-
-        for (int i = 0; i < frequencies.Length; i++) {
-            // The factors for this overtone.
-            value += intensities[i] * Mathf.Sin(time * 2 * Mathf.PI * frequencies[i]);
-        }
-
-        return value;
-    }
-
-    public float[] GenerateModifiedLine(int packetSize, float sampleRate, float scale) {
-
-        // Debug.Log(sampleRate);
-        float[] wavePacket = new float[packetSize];
-
-        // Itterate through the data.
-        for (int i = 0; i < packetSize; i++) {
-            wavePacket[i] = Volume * scale;
-        }
-
-        Modify(wavePacket, 1, 0, sampleRate, true);
-
-        return wavePacket;
+        #endregion
 
     }
-
-    #endregion
-
 
 }

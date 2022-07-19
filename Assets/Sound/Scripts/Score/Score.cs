@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Monet;
+using Monet.IO;
 
 namespace Monet {
 
@@ -21,17 +22,22 @@ namespace Monet {
         public int m_Bars;
         public Clef[] m_Clefs;
 
-        public static void Save(ref Score score, string filepath) {
-            string jsonStr = JsonUtility.ToJson(score);
+        public void Save(string filename) {
+            ScoreData data = new ScoreData(this, filename);
+            Monet.IO.Data.SaveJSON(data, filename, ScoreData.Directory, ScoreData.Format);
         }
 
-        public static void Open(ref Score score, string filepath) {
-            // if (setNodes) {
-            //     SetNodesFromScore(treble, trebleNodes);
-            //     SetNodesFromScore(bass, bassNodes);
-            // }
+        public void Open(string filename) {
+            ScoreData data = Monet.IO.Data.OpenJSON(filename, ScoreData.Directory, ScoreData.Format) as ScoreData;
+            if (data != null) {
+                Load(data);
+            }
+        }
+
+        public void Load(ScoreData data) {
+            
         }
 
     }
-    
+
 }

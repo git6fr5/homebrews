@@ -2,27 +2,30 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using Monet;
 
-using Shape = Wave.Shape;
+namespace Monet.UI {
 
-[RequireComponent(typeof(BoxCollider2D))]
-public class Selector : MonoBehaviour
-{
-    public Wave wave;
-    public Shape shape;
+    [RequireComponent(typeof(BoxCollider2D))]
+    public class Selector : UIComponent {
 
-    void OnMouseDown() {
-        wave.shape = shape;
-    }
+        [SerializeField] private Wave m_Wave;
+        [SerializeField] private WaveShape m_Shape;
 
-    void Update() {
-        if (wave.shape == shape) {
-            GetComponent<SpriteRenderer>().material.SetFloat("_OutlineWidth", 0.05f);
+        void OnMouseDown() {
+            m_Wave.SetShape(m_Shape);
         }
-        else {
-            GetComponent<SpriteRenderer>().material.SetFloat("_OutlineWidth", 0f);
+
+        void Update() {
+            if (m_Wave.Shape == m_Shape) {
+                GetComponent<SpriteRenderer>().material.SetFloat("_OutlineWidth", 0.05f);
+            }
+            else {
+                GetComponent<SpriteRenderer>().material.SetFloat("_OutlineWidth", 0f);
+            }
         }
 
     }
 
 }
+

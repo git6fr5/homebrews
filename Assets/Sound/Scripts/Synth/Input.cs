@@ -1,4 +1,6 @@
 /* --- Libraries --- */
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -16,40 +18,24 @@ namespace Monet {
         [SerializeField, ReadOnly] private int m_HoldTime = 0;
         public int HoldTime => m_HoldTime;
 
-
         public void OnUpdate() {
             bool down = UnityEngine.Input.GetKeyDown(m_KeyCode);
             bool up = UnityEngine.Input.GetKeyUp(m_KeyCode);
             m_Pressed = down ? true : up ? false : m_Pressed;
-
         }
 
-        public void Held(bool held, float dt) {
+        public void Held(int dt, bool held = true) {
             if (!held) {
-                m_HoldTime = 0f;
+                m_HoldTime = 0;
             }
             else {
                 m_HoldTime += dt;
             }
         }
 
-        public float Frequency(Key key) {
+        public float Frequency(Score.Key key) {
             return Score.Frequency(m_Tone, key);
         }
-
-        // public static Dictionary<KeyCode, Tone> MajorInstrument = new Dictionary<KeyCode, Tone>(){
-        //     // { KeyCode.Alpha0, Tone.REST },
-        //     { KeyCode.Alpha1, Tone.P1 },
-        //     { KeyCode.Alpha2, Tone.M2 },
-        //     { KeyCode.Alpha3, Tone.M3 },
-        //     { KeyCode.Alpha4, Tone.P4 },
-        //     { KeyCode.Alpha5, Tone.P5 },
-        //     { KeyCode.Alpha6, Tone.M6 },
-        //     { KeyCode.Alpha7, Tone.M7 },
-        //     { KeyCode.Alpha8, Tone.P8 },
-        //     { KeyCode.Alpha9, Tone.M9 },
-        //     { KeyCode.Alpha0, Tone.M10 }
-        // };
 
     }
 }

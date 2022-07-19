@@ -1,52 +1,67 @@
-﻿using System.Collections;
+﻿// Libraries.
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using Monet.UI;
 
-[RequireComponent(typeof(BoxCollider2D))]
-public class Knob : MonoBehaviour {
+namespace Monet.UI {
 
-    [SerializeField] [Range(0f, 3f)] protected float rotationFactor = 1f;
+    [RequireComponent(typeof(BoxCollider2D))]
+    public class Knob : UIComponent {
 
-    [SerializeField] [Range(0f, 1f)] public float value = 0f;
+        // Settings.
+        public static float RotationFactor = 0.35f;
+        public static float MinimumAngle = -120f;
+        public static float AngleRange = 240f;
 
-    [SerializeField] [ReadOnly] [Range(0f, 180f)] protected float minimumRotation = -120f;
-    [SerializeField] [ReadOnly] [Range(0f, 360f)] protected float rotationRange = 240f;
-    [SerializeField] [ReadOnly] protected bool isTurning = false;
-    [SerializeField] [ReadOnly] protected Vector2 mousePos;
+        [SerializeField, Range(0f, 1f)] private float m_Value = 0f;
+        public float Value => m_Value;
+        [SerializeField, ReadOnly] protected bool m_Turning = false;
+        [SerializeField, ReadOnly] protected Vector2 m_CacheMousePosition;
 
-    void Awake() {
-        gameObject.layer = LayerMask.NameToLayer("UI");
-        transform.eulerAngles = Vector3.forward * (-value * rotationRange - minimumRotation);
-    }
+        void Start() {
+            SetValue(0.5f);
+            transform.eulerAngles = Vector3.forward * (-m_Value * AngleRange - MinimumAngle);
+        }
 
-    void Update() {
-        if (isTurning) {
-            if (Input.GetMouseButtonUp(0)) {
-                isTurning = false;
-            }
-            else {
+        void Update() {
+            m_Turning = UnityEngine.Input.GetMouseButtonUp(0) ? false : m_Turning;
+            if (m_Turning) {
                 Turn();
             }
         }
-        transform.eulerAngles = Vector3.forward * (-value * rotationRange - minimumRotation);
+
+        void OnMouseDown() {
+            m_Turning = true;
+            m_CacheMousePosition = UIComponent.MousePosition;
+        }
+
+        void Turn() {
+
+            // Check how much the mouse has moved.
+            Vector2 mousePosition = Camera.main.ScreenToWorldPoint(UnityEngine.Input.mousePosition);
+            float valueIncrement = mousePosition.y - m_CacheMousePosition.y;
+
+            // Set the knob value.
+            m_Value += valueIncrement * RotationFactor;
+            if (m_Value > 1f) { 
+                m_Value = 1f; 
+            }
+            if (m_Value < 0f) { 
+                m_Value = 0f; 
+            }
+            m_CacheMousePosition = mousePosition;
+
+            // Set the knob angle.
+            transform.eulerAngles = Vector3.forward * (-m_Value * AngleRange - MinimumAngle);
+
+        }
+
+        public void SetValue(float value) {
+            m_Value = value;
+        }
+
     }
-
-    void OnMouseDown() {
-        isTurning = true;
-        mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-    }
-
-    void Turn() {
-
-        Vector2 newMousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        float valueIncrement = newMousePos.y - mousePos.y;
-        value += valueIncrement * rotationFactor;
-        if (value > 1f) { value = 1f; }
-        if (value < 0f) { value = 0f; }
-        mousePos = newMousePos;
-
-    }
-
 
 }
