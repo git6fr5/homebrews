@@ -1,170 +1,133 @@
-﻿/* --- Modules --- */
+﻿// Libraries
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using Monet;
+using Monet.IO;
 
-/* --- Enumerations --- */
-using Note = Score.Note;
-using Tone = Score.Tone;
-using Value = Score.NoteLength;
-using Shape = Wave.Shape;
-//using Parameters = Wave.Parameters;
-
-/// <summary>
-/// Generates noises.
-/// </summary>
-public class Synth : MonoBehaviour {
-
-    /* --- Components --- */
-    public AudioSource audioSource;
-
-    /* --- Settings --- */
-    [Space(5)] [Header("Settings")]
-    [SerializeField] public bool isEditing;
-    [SerializeField] [ReadOnly] public static float sampleRate; // The amount of times per second that the value of the wave is queried.
-
-    /* --- Volume --- */
-    [Space(5)] [Header("Volume")]
-    [SerializeField] public Knob volumeKnob;
-    [SerializeField] [ReadOnly] public float volume; // The volume that this synth outputs at.
-    [SerializeField] [ReadOnly] protected float maxVolume = 0.5f;
-
-    [Space(5)] [Header("Waves")]
-    public Wave waveA;
-    public Wave waveB;
-
-    // Playback.
-    [Space(5)] [Header("Playback")]
-    [SerializeField] public bool isPlayable; // Determines whether the synth can be directly played or not.
-    [SerializeField] [ReadOnly] protected int timeOffset = 0; // The time since at which the last note was played.
-    [SerializeField] [ReadOnly] public Note root; // The root note of this
-    [SerializeField] [ReadOnly] public Tone tone = Tone.REST; // The current note being played.
-    [SerializeField] [ReadOnly] protected KeyCode currKey = KeyCode.None; // The current key being pressed.
-    [HideInInspector] public bool newKey; // Triggers if a new key is pressed.
+namespace Monet {
     
-    public Stream stream;
-    public Camera synthCam;
+    /// <summary>
+    /// Generates noises.
+    /// </summary>
+    public class Synth : MonoBehaviour {
 
-    void Awake() {
-        sampleRate = AudioSettings.outputSampleRate;
-    }
+        #region Variables
 
-    void Update() {
+        // The amount of times per second that the value of the wave is queried.
+        public static float SampleRate; 
+        public static float WaveCount = 2; 
+        public static float MaxVolume = 0.5f;
 
-        if (isEditing) {
-            volume = volumeKnob.value * maxVolume;
-            waveA.GetWave();
-            waveB.GetWave();
-            if (stream.isActive) {
-                isPlayable = false;
+        // Components.
+        public AudioSource m_AudioSource => GetComponent<AudioSource>();
+
+        // Settings.
+        [Space(2), Header("Settings")]
+        [SerializeField] private bool m_Editable;
+        public bool Editable => m_Editable;
+        [SerializeField] private bool m_Playable;
+        public bool Playable => m_Playable;
+        
+        [SerializeField] private Knob m_VolumeKnob;
+        [SerializeField, ReadOnly] private float m_Volume;
+        public float VolumeRatio => m_Volume / MaxVolume;
+
+        [SerializeField, ReadOnly] private Score.Key m_Key;
+        [SerializeField, ReadOnly] private Score.Tone m_Tone;
+        [SerializeField, ReadOnly] private Wave[] m_Waves;
+        public Wave[] Waves => m_Waves;
+
+        // Controls.
+        [Space(2), Header("Controls")]
+        [SerializeField] private List<Input> m_Inputs; // The current key being pressed.
+        [SerializeField, ReadOnly] private int m_TimeOffset = 0; // The time since at which the last note was played.
+        [SerializeField, ReadOnly] private bool m_NewButton; // Triggers if a new key is pressed.
+
+        #endregion
+
+        // Runs once on instantiation.
+        void Awake() {
+            // Cache this value.
+            SampleRate = AudioSettings.outputSampleRate;
+        }
+
+        // Runs once every frame.
+        void Update() {
+            if (m_Editable) {
+                m_Volume = m_VolumeKnob.Value * m_MaxVolume;
+                waveA.GetWave();
+                waveB.GetWave();
             }
-            else {
-                isPlayable = true;
+
+            if (m_Playable && !m_AudioSource.isPlaying) {
+                m_AudioSource.Play();
+            }
+            else if (!m_Playable && m_AudioSource.isPlaying) {
+                m_AudioSource.Stop();
             }
         }
 
-        if (isPlayable) {
-            bool keyIsBeingPressed = false;
-            foreach (KeyValuePair<KeyCode, Tone> key in Score.MajorInstrument) {
-                if (Input.GetKey(key.Key)) {
+        // Runs once every time the audio data is read.
+        void OnAudioFilterRead(float[] data, int channels) {
+            // Stores the wavepackets.
+            List<float[]> wavePackets = new List<float[]>();
 
-                    tone = key.Value;
-
-                    if (!audioSource.isPlaying) {
-                        audioSource.Play();
+            // Itterate through the inputs.
+            foreach (Input input in m_Inputs) {
+                if (input.Pressed) {
+                    // Get the wave data.
+                    for (int i = 0; i < m_Waves.Length; i++) {
+                        float[] wavePacket = m_Waves[i].Generate(data.Length, channels, input.HoldTime, SampleRate, input.Frequency(m_Key));
+                        wavePackets.Add(wavePacket);
                     }
-                    keyIsBeingPressed = true;
-                    if (currKey != key.Key) {
-                        currKey = key.Key;
-                        newKey = true;
-                    }
-
-                    break;
+                    // Increment the time.
+                    input.Held((int)((float)data.Length)); // channels ??? I don't get it.
+                }
+                else {
+                    input.Held(false, 0f);
                 }
             }
+            ReadPackets(ref data, wavePackets);
 
-            if (!keyIsBeingPressed) {
-                currKey = KeyCode.None;
-                if (audioSource.isPlaying) {
-                    audioSource.Stop();
+        }
+
+        // Reads the packets into the data array.
+        private static void ReadPackets(ref float[] data, List<float[]> wavePackets) {
+            for (int i = 0; i < data.Length; i++) {
+                data[i] = 0f;
+                for (int j = 0; j < wavePackets.Count; j++) {
+                    data[i] += m_Volume * wavePackets[j][i];
                 }
-
             }
         }
-    }
 
-
-    void OnAudioFilterRead(float[] data, int channels) {
-
-        // Increment the time.
-        if (newKey) {
-            timeOffset = 0;
-            newKey = false;
+        public void Save(string filename) {
+            SynthData data = new SynthData(this, filename);
+            Data.SaveJSON(data, filename, SynthData.Directory, SynthData.Format);
         }
 
-        // Get the current note.
-        float fundamental = Score.NoteFrequencies[root] * Score.ToneMultipliers[tone]; // Mathf.Max(1, octave + 1) / Mathf.Min(1, octave - 1);
-
-        // Get the wave data.
-        float[] wavePacketA = waveA.Generate(data.Length, channels, timeOffset, sampleRate, fundamental);
-        float[] wavePacketB = waveB.Generate(data.Length, channels, timeOffset, sampleRate, fundamental);
-
-        for (int i = 0; i < data.Length; i++) { 
-            data[i] = volume * (wavePacketA[i] + wavePacketB[i]); 
-        }
-
-        // Increment the time.
-        timeOffset += (int)((float)data.Length); // / channels ??? I don't get it.
-
-    }
-
-    /* --- IO --- */
-    public static string path = "Synths/";
-    public static string filetype = ".synth";
-
-    [System.Serializable]
-    public class SynthData : Data {
-
-        float volume;
-        Wave.WaveData waveDataA;
-        Wave.WaveData waveDataB;
-
-        public SynthData(Synth synth) {
-
-            this.volume = synth.volume;
-            waveDataA = new Wave.WaveData(synth.waveA);
-            waveDataB = new Wave.WaveData(synth.waveB);
-
-        }
-
-        public void Load(Synth synth) {
-
-            synth.volume = this.volume;
-            waveDataA.Load(synth.waveA, synth.isEditing);
-            waveDataB.Load(synth.waveB, synth.isEditing);
-
-            if (synth.isEditing) {
-                synth.volumeKnob.value = synth.volume / synth.maxVolume;
+        public void Open(string filename) {
+            SynthData data = Data.OpenJSON(filename, SynthData.Directory, SynthData.Format) as SynthData;
+            if (data != null) {
+                Load(data);
             }
+        }
 
+        public void Load(SynthData data) {
+            m_Volume = data.Volume;
+            for (int i = 0; i < m_Waves.Waves; i++) {
+                if (data.Waves.Length < i) {
+                    data.Waves[i].Load(m_Waves[i], m_Editable);
+                }
+            }
+            if (m_Editable) {
+                m_VolumeKnob.SetValue(VolumeRatio);
+            }
         }
 
     }
-
-    public void Save(string filename) {
-        SynthData data = new SynthData(this);
-        IO.SaveDataFile(data, path, filename, filetype);
-    }
-
-    public void Open(string filename) {
-        SynthData data = IO.OpenDataFile(path, filename, filetype) as SynthData;
-        if (data != null) {
-            data.Load(this);
-        }
-        stream.text = filename;
-    }
-
 
 }

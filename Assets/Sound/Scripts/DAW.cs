@@ -11,57 +11,36 @@ using Clef = Score.Clef;
 
 public class DAW : MonoBehaviour {
 
-    public Synth synthA;
-    public Synth synthB;
-
-    public class Channel {
-        public Clef clef;
-        public Synth synth;
-        public int index;
-        public float timeInterval;
-
-        public Channel(Clef clef, Synth synth) {
-            this.timeInterval = 0f;
-            this.index = 0;
-            this.clef = clef;
-            synth.isPlayable = false;
-            this.synth = synth;
-        }
-    }
-    public List<Channel> channels = new List<Channel>();
-
-    //BPM.
-    [Space(5)]
-    [Header("BPM")]
-    [SerializeField] public Knob BPMKnob;
-    [SerializeField] [ReadOnly] protected int BPM;
-    [SerializeField] [ReadOnly] protected int minBPM = 30;
-    [SerializeField] [ReadOnly] protected int maxBPM = 240;
-    [HideInInspector] protected float secondsPerQuarterNote;
-
+   
     public int editingChannel = 1;
-
-    public Score score;
-
-    public string scoreFile;
-    public string synthFileA;
-    public string synthFileB;
-
     public bool isEditing;
+
+    [Space(2), Header("File Paths")]
+    [SerializeField] private string m_ScoreFilePath;
+    [SerializeField] private string[] m_SynthFiles;
+
+    [SerializeField] public Knob BPMKnob;
+    [SerializeField, ReadOnly] private int m_BeatsPerMinute;
+
+    [HideInInspector] private float m_NoteInterval;
+    [HideInInspector] private Score m_Score;
+    [HideInInspector] private Synth[] m_Synths;
+    [HideInInspector] private List<Channel> m_Channels = new List<Channel>();
+
+    [SerializeField, ReadOnly] private float m_Ticks = 0f;
+
 
     void Awake() {
 
         // Load scores.
-        score.RandomScore();
+        Score.Open(ref m_Score, m_ScoreFilePath);
 
-        // Load channels.
-        synthA.Open(synthFileA);
-        channels.Add(new Channel(score.treble, synthA));
-
-        synthB.Open(synthFileB);
-        channels.Add(new Channel(score.bass, synthB));
-
-        score.Instantiate();
+        // Load synths.
+        for (int i = 0; i < m_SynthFiles.Length; i++) {
+            Synth synth = Synth.CreateDAWSynth();
+            Synth.Open(ref synth, m_SynthFiles[i]);
+            m_Channels.Add(new Channel(synth, m_Score.Line[i]));
+        }
 
     }
 
@@ -69,10 +48,10 @@ public class DAW : MonoBehaviour {
 
         if (isEditing) {
             // Get BPM.
-            BPM = (int)(BPMKnob.value * (maxBPM - minBPM)) + minBPM;
+            m_BeatsPerMinute = (int)(BPMKnob.value * (maxBPM - minBPM)) + minBPM;
         }
         // Get the duration of a note with respect to the BPM.
-        secondsPerQuarterNote = 60f / BPM;
+        m_NoteInterval = 60f / m_BeatsPerMinute;
 
         GetVolumes();
 
@@ -87,35 +66,35 @@ public class DAW : MonoBehaviour {
     public float maxVolume = 0.5f;
 
     void GetVolumes() {
-        for (int i = 0; i < channels.Count; i++) {
-            channels[i].synth.volume = channels[i].synth.volumeKnob.value * maxVolume;
+        for (int i = 0; i < m_Channels.Count; i++) {
+            m_Channels[i].synth.volume = m_Channels[i].synth.volumeKnob.value * maxVolume;
         }
     }
 
     private void Play() {
-        channels[0].clef = score.treble;
-        channels[1].clef = score.bass;
+        m_Channels[0].clef = m_Score.treble;
+        m_Channels[1].clef = m_Score.bass;
 
-        for (int i = 0; i < channels.Count; i++) {
+        for (int i = 0; i < m_Channels.Count; i++) {
 
-            channels[i].synth.root = score.root;
+            m_Channels[i].synth.root = m_Score.root;
 
-            if (channels[i].index >= channels[i].clef.tones.Count && channels[i].synth.audioSource.isPlaying) {
-                ReplayChannel(channels[i]);
+            if (m_Channels[i].index >= m_Channels[i].clef.tones.Count && m_Channels[i].synth.audioSource.isPlaying) {
+                ReplayChannel(m_Channels[i]);
             }
 
-            if (Input.GetKeyDown(KeyCode.Space) && !channels[i].synth.audioSource.isPlaying && isEditing) {
+            if (Input.GetKeyDown(KeyCode.Space) && !m_Channels[i].synth.audioSource.isPlaying && isEditing) {
                 timeInterval = 0f;
                 subdividedIndex = 0;
-                PlayChannel(channels[i]);
+                PlayChannel(m_Channels[i]);
             }
 
-            else if (Input.GetKeyDown(KeyCode.Space) && channels[i].synth.audioSource.isPlaying && isEditing) {
-                StopChannel(channels[i]);
+            else if (Input.GetKeyDown(KeyCode.Space) && m_Channels[i].synth.audioSource.isPlaying && isEditing) {
+                StopChannel(m_Channels[i]);
             }
 
-            if (channels[i].synth.audioSource.isPlaying) {
-                WhilePlayingChannel(channels[i]);
+            if (m_Channels[i].synth.audioSource.isPlaying) {
+                WhilePlayingChannel(m_Channels[i]);
             }
 
         }
@@ -124,11 +103,11 @@ public class DAW : MonoBehaviour {
     private void Tick() {
         timeInterval += Time.deltaTime;
         float subdividedInterval = Score.LengthMultipliers[Value.SIXTEENTH];
-        if (timeInterval >= subdividedInterval * secondsPerQuarterNote) {
-            timeInterval -= subdividedInterval * secondsPerQuarterNote;
+        if (timeInterval >= subdividedInterval * m_NoteInterval) {
+            timeInterval -= subdividedInterval * m_NoteInterval;
             subdividedIndex++;
         }
-        maxIndex = (int)(barLength * score.bars / subdividedInterval);
+        maxIndex = (int)(barLength * m_Score.bars / subdividedInterval);
         if (subdividedIndex >= maxIndex) {
             subdividedIndex = 0;
         }
