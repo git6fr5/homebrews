@@ -14,29 +14,10 @@ public class Wave : MonoBehaviour {
     [SerializeField] public Distribution distributionA;
     public float[] Overtones;
 
-    [SerializeField] public Knob m_VolumeKnob;
-    [SerializeField, ReadOnly] private float m_Volume;
-    public float Volume => m_Volume;
-    public static float MaxVolume = 1f;
-    public float VolumeRatio => m_Volume / MaxVolume;
-
-    [SerializeField] private Knob m_AttackKnob;
-    [SerializeField, ReadOnly] private float m_Attack;
-    public float Attack => m_Attack;
-    public static float MaxAttack = 1f;
-    public float AttackRatio => m_Attack / MaxAttack;
-
-    [SerializeField] private Knob m_SustainKnob;
-    [SerializeField, ReadOnly] private float m_Sustain;
-    public float Sustain => m_Sustain;
-    public static float MaxSustain = 1f;
-    public float SustainRatio => m_Sustain / MaxSustain;
-
-    [SerializeField] private Knob m_DecayKnob;
-    [SerializeField, ReadOnly] private float m_Decay;
-    public float Decay => m_Decay;
-    public static float MaxDecay = 20f;
-    public float DecayRatio => m_Decay / MaxDecay;
+    [SerializeField] private Modifier m_Volume;
+    [SerializeField] private Modifier m_Attack;
+    [SerializeField] private Modifier m_Sustain;
+    [SerializeField] private Modifier m_Decay;
     
     // Wave Adders.
     private delegate float WaveFunction(float fundamental, float time);
@@ -70,7 +51,7 @@ public class Wave : MonoBehaviour {
 
         // Get the octave.
         if (shiftOctave) {
-            float octaveFactor = (octaveShift == 0) ? 1 : ((octaveShift > 0) ? Mathf.Pow(2, octaveShift) : 1f / Mathf.Pow(2, Mathf.Abs(octaveShift)));
+            float octaveFactor = ((octaveShift >= 0) ? Mathf.Pow(2, octaveShift) : 1f / Mathf.Pow(2, Mathf.Abs(octaveShift)));
             fundamental *= octaveFactor;
         }
 
@@ -96,23 +77,26 @@ public class Wave : MonoBehaviour {
 
     public float[] Modify(float[] data, int channels, int timeOffset, float sampleRate, bool addModifiers) {
 
+        float attack = m_Attack.Value;
+        float sustain = m_Sustain.Value;
+        float decay = m_Decay.Value;
+        float volume = m_Volume.Value;
+
         // Apply the modifiers
         for (int i = 0; i < data.Length; i += channels) {
             float time = (float)(i + timeOffset) / (float)sampleRate / (float)channels;
-            float factor = Volume;
 
             if (addModifiers) {
-
-                if (time < Attack) {
-                    factor *= Mathf.Pow((time / Attack), 2);
+                if (time < attack) {
+                    volume *= Mathf.Pow((time / attack), 2);
                 }
-                if (time > Sustain) {
-                    factor *= Mathf.Exp(-Decay * (time - Sustain));
+                if (time > sustain) {
+                    volume *= Mathf.Exp(-decay * (time - sustain));
                 }
             }
 
             for (int j = 0; j < channels; j++) {
-                data[i + j] *= factor;
+                data[i + j] *= volume;
             }
 
         }
@@ -120,6 +104,8 @@ public class Wave : MonoBehaviour {
         return data;
 
     }
+
+    #region Hide
 
     private float SineFunction(float fundamental, float time) {
         // Get the value for this index.
@@ -193,6 +179,8 @@ public class Wave : MonoBehaviour {
         return wavePacket;
 
     }
+
+    #endregion
 
 
 }
