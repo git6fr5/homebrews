@@ -14,7 +14,7 @@ namespace Monet.UI {
 
         // Settings.
         public static Vector2 Size = new Vector2(0.25f, 0.25f);
-        public static float Scale = 3f;
+        public static float Scale = 2.5f;
         public static float LineWidth = 0.1f;
         public static float DragFactor = 0.25f;
 
@@ -34,6 +34,7 @@ namespace Monet.UI {
             m_BoxCollider.size = Size;
             m_LineRenderer.startWidth = LineWidth;
             m_LineRenderer.endWidth = LineWidth;
+            m_LineRenderer.useWorldSpace = true;
             gameObject.SetActive(true);
         }
 
@@ -67,11 +68,14 @@ namespace Monet.UI {
 
             // Set the position.
             transform.localPosition = (Vector3)m_Origin + m_Value * Scale * Vector3.up;
+            m_LineRenderer.SetPositions(new Vector3[2] { transform.position - m_Value * Scale * Vector3.up, transform.position } );
 
         }
 
         public void SetValue(float value) {
             m_Value = value;
+            transform.localPosition = (Vector3)m_Origin + m_Value * Scale * Vector3.up;
+            m_LineRenderer.SetPositions(new Vector3[2] { transform.position - m_Value * Scale * Vector3.up, transform.position } );
         }
 
     }

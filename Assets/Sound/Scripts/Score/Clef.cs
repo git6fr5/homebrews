@@ -6,12 +6,16 @@ using Monet;
 
 namespace Monet {
 
-    ///<summary>
-    ///
-    ///<summary>
+    public class Note {
+
+        public Score.Interval Interval;
+        public Score.Tone Tone;
+
+    }
+
     public class Clef {
 
-        
+        public Note[] Notes;
 
     }
 

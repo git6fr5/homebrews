@@ -22,7 +22,6 @@ namespace Monet.UI {
 
         void Start() {
             SetValue(0.5f);
-            transform.eulerAngles = Vector3.forward * (-m_Value * AngleRange - MinimumAngle);
         }
 
         void Update() {
@@ -60,6 +59,7 @@ namespace Monet.UI {
 
         public void SetValue(float value) {
             m_Value = value;
+            transform.eulerAngles = Vector3.forward * (-m_Value * AngleRange - MinimumAngle);
         }
 
     }

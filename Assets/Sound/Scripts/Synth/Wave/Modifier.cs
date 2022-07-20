@@ -26,8 +26,11 @@ namespace Monet {
         }
 
         public void Load(ModifierData data) {
-            m_Knob.SetValue(data.Ratio);
             m_MaxValue = data.MaxValue;
+            m_Value = data.Ratio * m_MaxValue;
+            if (m_Knob != null) {
+                m_Knob.SetValue(data.Ratio);
+            }
         }
 
     }

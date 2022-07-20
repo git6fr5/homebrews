@@ -11,12 +11,30 @@ namespace Monet {
     [System.Serializable]
     public class Input {
 
-        [SerializeField] private KeyCode m_KeyCode;
+        public static List<Input> DiatonicMajor = new List<Input> {
+            new Input(KeyCode.Alpha1, Score.Tone.P1),
+            new Input(KeyCode.Alpha2, Score.Tone.Maj2),
+            new Input(KeyCode.Alpha3, Score.Tone.Maj3),
+            new Input(KeyCode.Alpha4, Score.Tone.P4),
+            new Input(KeyCode.Alpha5, Score.Tone.P5),
+            new Input(KeyCode.Alpha6, Score.Tone.Maj6),
+            new Input(KeyCode.Alpha7, Score.Tone.Maj7),
+            new Input(KeyCode.Alpha8, Score.Tone.P8),
+            new Input(KeyCode.Alpha9, Score.Tone.Maj9),
+            new Input(KeyCode.Alpha0, Score.Tone.Maj10),
+        };
+
+        [SerializeField] private UnityEngine.KeyCode m_KeyCode;
         [SerializeField] private Score.Tone m_Tone;
         [SerializeField, ReadOnly] private bool m_Pressed;
         public bool Pressed => m_Pressed;
         [SerializeField, ReadOnly] private int m_HoldTime = 0;
         public int HoldTime => m_HoldTime;
+
+        public Input(UnityEngine.KeyCode keyCode, Score.Tone tone) {
+            m_KeyCode = keyCode;
+            m_Tone = tone;
+        }
 
         public void OnUpdate() {
             bool down = UnityEngine.Input.GetKeyDown(m_KeyCode);

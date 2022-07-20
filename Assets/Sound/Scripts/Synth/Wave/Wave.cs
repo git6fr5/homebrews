@@ -33,16 +33,17 @@ namespace Monet {
         [SerializeField] private int m_OctaveShift;
         public int OctaveShift => m_OctaveShift;
 
-        void Start() {
+        void Awake() {
             m_Overtones.Reset();
+            SetShape(m_Shape);
         }
 
-        void Update() {
+        public void OnUpdate() {
             m_Volume.OnUpdate();
             m_Attack.OnUpdate();
             m_Sustain.OnUpdate();
             m_Decay.OnUpdate();
-            Overtones.OnUpdate();
+            m_Overtones.OnUpdate();
         }
 
         public void SetShape(WaveShape shape) {
@@ -66,12 +67,8 @@ namespace Monet {
         public void ShiftOctave(int shift) {
             m_OctaveShift += shift;
         }
-        
-        public void GetWave() {
-            // Overtones = distributionA.GetValues();
-        }
 
-        public float[] Generate(int packetSize, int channels, int timeOffset, float sampleRate, float fundamental, bool shiftOctave = true, bool modify = true) {
+        public float[] Generate(int packetSize, int channels, int timeOffset, float sampleRate, float fundamental, bool shiftOctave = true, bool modify = true, bool shape = true) {
 
             // Get the octave.
             if (shiftOctave) {
@@ -83,10 +80,17 @@ namespace Monet {
             float[] wavePacket = new float[packetSize];
 
             // Itterate through the data.
+            float normal = -1f;
             for (int i = 0; i < packetSize; i += channels) {
                 float time = (float)(timeOffset + i) / (float)sampleRate / (float)channels;
 
-                float value = DelegatedWaveFuntion(fundamental, time);
+                float value = 1f;
+                if (shape) {
+                    value = DelegatedWaveFuntion(fundamental, time);
+                }
+                if (Mathf.Abs(value) > normal) {
+                    normal = Mathf.Abs(value);
+                }
 
                 // Put that value into both the channels.
                 for (int j = 0; j < channels; j++) {
@@ -94,33 +98,38 @@ namespace Monet {
                 }
             }
 
-            Modify(wavePacket, channels, timeOffset, sampleRate, modify);
+            float volume = m_Volume.Value;
+            for (int i = 0; i < wavePacket.Length; i++) {
+                wavePacket[i] *= volume / normal;
+            }
+            
+            if (modify) {
+                Modify(wavePacket, channels, timeOffset, sampleRate);
+            }
 
             return wavePacket;
         }
 
-        public float[] Modify(float[] data, int channels, int timeOffset, float sampleRate, bool modify) {
+        public float[] Modify(float[] data, int channels, int timeOffset, float sampleRate) {
 
             float attack = m_Attack.Value;
             float sustain = m_Sustain.Value;
             float decay = m_Decay.Value;
-            float volume = m_Volume.Value;
 
             // Apply the modifiers
             for (int i = 0; i < data.Length; i += channels) {
                 float time = (float)(i + timeOffset) / (float)sampleRate / (float)channels;
+                float factor = 1f;
 
-                if (modify) {
-                    if (time < attack) {
-                        volume *= Mathf.Pow((time / attack), 2);
-                    }
-                    if (time > sustain) {
-                        volume *= Mathf.Exp(-decay * (time - sustain));
-                    }
+                if (time < attack) {
+                    factor *= Mathf.Pow((time / attack), 2);
+                }
+                if (time > sustain) {
+                    factor *= Mathf.Exp(-decay * (time - sustain));
                 }
 
                 for (int j = 0; j < channels; j++) {
-                    data[i + j] *= volume;
+                    data[i + j] *= factor;
                 }
 
             }
@@ -130,8 +139,9 @@ namespace Monet {
         }
 
         public void Load(WaveData data) {
-            m_Shape = data.Shape;
+            SetShape(data.Shape);
             m_OctaveShift = data.OctaveShift;
+            m_Overtones.Load(data.Overtones);
             m_Volume.Load(data.Volume);
             m_Attack.Load(data.Attack);
             m_Sustain.Load(data.Sustain);
@@ -145,9 +155,9 @@ namespace Monet {
             float value = 0f;
             for (int i = 0; i < Overtones.Values.Length; i++) {
                 // The factors for this overtone.
-                float volumeFactor = Overtones.Values[i];
+                float volume = Overtones.Values[i];
                 float frequency = fundamental * (i + 1);
-                value += volumeFactor * Mathf.Sin(time * 2 * Mathf.PI * frequency);
+                value += volume * Mathf.Sin(time * 2 * Mathf.PI * frequency);
             }
 
             return value;
@@ -158,10 +168,10 @@ namespace Monet {
             float value = 0f;
             for (int i = 0; i < Overtones.Values.Length; i++) {
                 // The factors for this overtone.
-                float volumeFactor = Overtones.Values[i];
+                float volume = Overtones.Values[i];
                 float frequency = fundamental * (i + 1);
                 float period = 1 / frequency;
-                value += (time % period < period / 2f) ? volumeFactor : -volumeFactor;
+                value += (time % period < period / 2f) ? volume : -volume;
             }
 
             return value;
@@ -172,14 +182,14 @@ namespace Monet {
             float value = 0f;
             for (int i = 0; i < Overtones.Values.Length; i++) {
                 // The factors for this overtone.
-                float volumeFactor = Overtones.Values[i];
+                float volume = Overtones.Values[i];
                 float frequency = fundamental * (i + 1);
                 float period = 1 / frequency;
 
                 float sign = (time % period < period / 2f) ? 1f : -1f;
-                float offset = sign * -volumeFactor;
+                float offset = sign * -volume;
 
-                value += offset + sign * (time % (period / 2f) / (period / 2f)) * 2f * volumeFactor;
+                value += offset + sign * (time % (period / 2f) / (period / 2f)) * 2f * volume;
             }
 
             return value;

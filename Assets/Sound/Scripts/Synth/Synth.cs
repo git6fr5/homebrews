@@ -39,23 +39,28 @@ namespace Monet {
         // Controls.
         [Space(2), Header("Controls")]
         [SerializeField] private List<Input> m_Inputs; // The current key being pressed.
-        [SerializeField, ReadOnly] private int m_TimeOffset = 0; // The time since at which the last note was played.
-        [SerializeField, ReadOnly] private bool m_NewButton; // Triggers if a new key is pressed.
 
         #endregion
 
         // Runs once on instantiation.
         void Awake() {
             // Cache this value.
+            m_Inputs = Input.DiatonicMajor;
             SampleRate = AudioSettings.outputSampleRate;
         }
 
         // Runs once every frame.
         void Update() {
             if (m_Editable) {
+                m_Volume.OnUpdate();
                 for (int i = 0; i < m_Waves.Length; i++) {
-                    m_Waves[i].GetWave();
+                    m_Waves[i].OnUpdate();
                 }
+            }
+
+            // Itterate through the inputs.
+            foreach (Input input in m_Inputs) {
+                input.OnUpdate();
             }
 
             if (m_Playable && !m_AudioSource.isPlaying) {
@@ -106,7 +111,8 @@ namespace Monet {
         }
 
         public void Open(string filename) {
-            SynthData data = Monet.IO.Data.OpenJSON(filename, SynthData.Directory, SynthData.Format) as SynthData;
+            string json = Monet.IO.Data.OpenJSON(filename, SynthData.Directory, SynthData.Format);
+            SynthData data = JsonUtility.FromJson<SynthData>(json);
             if (data != null) {
                 Load(data);
             }

@@ -13,7 +13,9 @@ namespace Monet {
         // Settings.
         [SerializeField, ReadOnly] public WaveShape Shape;
         [SerializeField, ReadOnly] public int OctaveShift;
-        // [SerializeField, ReadOnly] public float[] m_Overtones;
+
+        // Distribution.
+        [SerializeField, ReadOnly] public DistributionData Overtones;
 
         // Modifiers.
         [SerializeField, ReadOnly] public ModifierData Volume;
@@ -26,7 +28,7 @@ namespace Monet {
             // Settings.
             Shape = wave.Shape;
             OctaveShift = wave.OctaveShift;
-            // m_Overtones = wave.Overtones;
+            Overtones = new DistributionData(wave.Overtones, "overtones");
             
             // Modifiers.
             Volume = new ModifierData(wave.Volume, "volume");

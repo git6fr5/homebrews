@@ -11,19 +11,20 @@ namespace Monet {
     ///<summary>
     ///
     ///<summary>
+    [System.Serializable]
     public class Distribution {
 
-        [SerializeField, ReadOnly] public float[] m_Values;
-        public float[] Values => m_Values;
         [SerializeField] private Draggable[] m_Draggables;
         [SerializeField] private float m_MaxValue = 1f;
         public float MaxValue => m_MaxValue;
+        [SerializeField, ReadOnly] public float[] m_Values;
+        public float[] Values => m_Values;
         public float[] Ratios => GetRatios();
 
         public void Reset() {
             for (int i = 0; i < m_Draggables.Length; i++) {
-                m_Draggables[i].SetValue(Mathf.Exp(-i));
                 m_Draggables[i].Init();
+                m_Draggables[i].SetValue(Mathf.Exp(-i));
             }
         }
 
@@ -35,12 +36,15 @@ namespace Monet {
         }
 
         public void Load(DistributionData data) {
-            for (int i = 0; i < m_Draggables.Length; i++) {
-                if (i < data.Ratios.Length) {
+            m_MaxValue = data.MaxValue;
+
+            m_Values = new float[data.Ratios.Length];
+            for (int i = 0; i < m_Values.Length; i++) {
+                m_Values[i] = data.Ratios[i] * MaxValue;
+                if (m_Draggables != null && i < m_Draggables.Length) {
                     m_Draggables[i].SetValue(data.Ratios[i]);
                 }
             }
-            m_MaxValue = data.MaxValue;
         }
 
         public float[] GetRatios() {

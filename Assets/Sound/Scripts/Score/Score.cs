@@ -28,10 +28,10 @@ namespace Monet {
         }
 
         public void Open(string filename) {
-            ScoreData data = Monet.IO.Data.OpenJSON(filename, ScoreData.Directory, ScoreData.Format) as ScoreData;
-            if (data != null) {
-                Load(data);
-            }
+            // ScoreData data = Monet.IO.Data.OpenJSON(filename, ScoreData.Directory, ScoreData.Format) as ScoreData;
+            // if (data != null) {
+            //     Load(data);
+            // }
         }
 
         public void Load(ScoreData data) {

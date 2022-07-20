@@ -13,7 +13,7 @@ namespace Monet.IO {
     [System.Serializable]
     public class Data {
 
-        public static string Path = "/";
+        public static string Path = "Assets/Resources/Data/";
 
         #region JSON
 
@@ -25,13 +25,13 @@ namespace Monet.IO {
             }
         }
 
-        public static object OpenJSON(string filename, string directory, string format) {
+        public static string OpenJSON(string filename, string directory, string format) {
             string json = "";
             string filepath = Path + directory + filename + format;
             using (StreamReader r = new StreamReader(filepath)) {
                 json = r.ReadToEnd();
             }
-            return JsonUtility.FromJson<object>(json);
+            return json;
         }
 
         #endregion
