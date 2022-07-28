@@ -36,10 +36,13 @@ namespace Monet {
             m_Tone = tone;
         }
 
-        public void OnUpdate() {
+        public void OnUpdate(bool disable) {
             bool down = UnityEngine.Input.GetKeyDown(m_KeyCode);
             bool up = UnityEngine.Input.GetKeyUp(m_KeyCode);
             m_Pressed = down ? true : up ? false : m_Pressed;
+            if (disable) {
+                m_Pressed = false;
+            }
         }
 
         public void Held(int dt, bool held = true) {

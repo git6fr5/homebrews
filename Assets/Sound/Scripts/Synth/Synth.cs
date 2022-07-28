@@ -17,24 +17,27 @@ namespace Monet {
 
         #region Variables
 
+        [SerializeField] private string m_Filename;
+        public string Filename => m_Filename;
+
         // The amount of times per second that the value of the wave is queried.
         public static float SampleRate; 
 
         // Components.
         public AudioSource m_AudioSource => GetComponent<AudioSource>();
-        [SerializeField] private Wave[] m_Waves;
+        [SerializeField] protected Wave[] m_Waves;
         public Wave[] Waves => m_Waves;
 
         // Settings.
         [Space(2), Header("Settings")]
-        [SerializeField] private bool m_Editable;
+        [SerializeField] protected bool m_Editable;
         public bool Editable => m_Editable;
-        [SerializeField] private bool m_Playable;
+        [SerializeField] protected bool m_Playable;
         public bool Playable => m_Playable;
-        [SerializeField] private Modifier m_Volume;
+        [SerializeField] protected Modifier m_Volume;
         public Modifier Volume => m_Volume;
-        [SerializeField, ReadOnly] private Score.Key m_Key;
-        [SerializeField, ReadOnly] private Score.Tone m_Tone;
+        [SerializeField, ReadOnly] protected Score.Key m_Key;
+        [SerializeField, ReadOnly] protected Score.Tone m_Tone;
 
         // Controls.
         [Space(2), Header("Controls")]
@@ -50,7 +53,7 @@ namespace Monet {
         }
 
         // Runs once every frame.
-        void Update() {
+        protected virtual void Update() {
             if (m_Editable) {
                 m_Volume.OnUpdate();
                 for (int i = 0; i < m_Waves.Length; i++) {
@@ -59,8 +62,9 @@ namespace Monet {
             }
 
             // Itterate through the inputs.
+            bool disable = UIComponent.IsAnInputFieldFocused();
             foreach (Input input in m_Inputs) {
-                input.OnUpdate();
+                input.OnUpdate(disable);
             }
 
             if (m_Playable && !m_AudioSource.isPlaying) {
@@ -72,7 +76,7 @@ namespace Monet {
         }
 
         // Runs once every time the audio data is read.
-        void OnAudioFilterRead(float[] data, int channels) {
+        protected virtual void OnAudioFilterRead(float[] data, int channels) {
             // Stores the wavepackets.
             List<float[]> wavePackets = new List<float[]>();
 
@@ -96,13 +100,17 @@ namespace Monet {
         }
 
         // Reads the packets into the data array.
-        private static void ReadPackets(ref float[] data, List<float[]> wavePackets, float volume) {
+        protected static void ReadPackets(ref float[] data, List<float[]> wavePackets, float volume) {
             for (int i = 0; i < data.Length; i++) {
                 data[i] = 0f;
                 for (int j = 0; j < wavePackets.Count; j++) {
                     data[i] += volume * wavePackets[j][i];
                 }
             }
+        }
+
+        public void SetFilename(string filename) {
+            m_Filename = filename;
         }
 
         public void Save(string filename) {
