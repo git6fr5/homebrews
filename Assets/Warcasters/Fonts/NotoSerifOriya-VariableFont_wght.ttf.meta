@@ -1,0 +1,24 @@
+fileFormatVersion: 2
+guid: e9451e5a8f2461e49a0b374b7918c55d
+TrueTypeFontImporter:
+  externalObjects: {}
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontNames:
+  - Noto Serif Oriya
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: 72bb37f116ab7ba4abc82f6aea0aa7bf, type: 3}
+  - {fileID: 12800000, guid: 46694ee2435b56c44aecfbcbeeb5acca, type: 3}
+  - {fileID: 12800000, guid: b3b5245733aa8274daf9f1b42b4fdb37, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  useLegacyBoundsCalculation: 0
+  shouldRoundAdvanceValue: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

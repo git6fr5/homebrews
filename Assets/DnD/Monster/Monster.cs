@@ -15,55 +15,41 @@ namespace DungeonsNDragons {
 
         [SerializeField] private Stat m_Stats;
 
-        [SerializeField] private Text[] m_StatBlockText; 
-
-        // Header.
-        [SerializeField] private Text m_NameText;
-        [SerializeField] private Text m_HPText;
-        [SerializeField] private Text m_ACText;
-        [SerializeField] private Text m_SpeedText;
+        // [SerializeField] private Text[] m_StatBlockText; 
 
         // Para 1.
         [SerializeField] private Text m_SavingThrows;
         [SerializeField] private Text m_SkillChecks;
 
         // Para 2.
-        [SerializeField] private MonsterAttack m_Attack;
-        [SerializeField] private Text m_AttackText;
+        [SerializeField] private MonsterAttack[] m_Attacks;
+        // [SerializeField] private Text m_AttackText;
 
-        public void Update() {
-            Draw();
-        }
+        public override void Draw() {
+            Background();
+            Text title = Title(NAME, Settings.TitleHeightRatio);
+            Text hp = Property("HP: ", m_Stats.HPTag, title.rectTransform, Settings.PropertyWidthRatio, Settings.PropertyHeightRatio);
+            Text ac = Property("AC: ", m_Stats.ACTag, hp.rectTransform, Settings.PropertyWidthRatio, Settings.PropertyHeightRatio);
+            Text speed = Property("SPD: ", m_Stats.SpeedTag, ac.rectTransform, Settings.PropertyWidthRatio, Settings.PropertyHeightRatio);
 
-        public void Draw() {
-            // Header.
-            Card.Title(NAME);
-            m_NameText.text = NAME;
-            m_NameText.font = m_AlphabetFont;
-
-            m_HPText.text = m_Stats.HPTag;
-            m_HPText.font = m_NumericFont;
-
-            m_ACText.text = m_Stats.ACTag;
-            m_ACText.font = m_NumericFont;
-
-            m_SpeedText.text = m_Stats.SpeedTag;
-            m_SpeedText.font = m_NumericFont;
-
-            // Stat block.
-            m_StatBlockText[0].text = m_Stats.STRTag;
-            m_StatBlockText[1].text = m_Stats.DEXTag;
-            m_StatBlockText[2].text = m_Stats.CONTag;
-            m_StatBlockText[3].text = m_Stats.INTTag;
-            m_StatBlockText[4].text = m_Stats.WISTag;
-            m_StatBlockText[5].text = m_Stats.CHATag;
+            // // // Stat block.
+            RectTransform spdRT = speed.rectTransform;
+            Text STR = StatLine("STR", m_Stats.STRTag, spdRT, 0, 6, Settings.StatHeightRatio, Settings.StatSpacingRatio);
+            Text DEX = StatLine("DEX", m_Stats.DEXTag, spdRT, 1, 6, Settings.StatHeightRatio, Settings.StatSpacingRatio);
+            Text CON = StatLine("CON", m_Stats.CONTag, spdRT, 2, 6, Settings.StatHeightRatio, Settings.StatSpacingRatio);
+            Text INT = StatLine("INT", m_Stats.INTTag, spdRT, 3, 6, Settings.StatHeightRatio, Settings.StatSpacingRatio);
+            Text WIS = StatLine("WIS", m_Stats.WISTag, spdRT, 4, 6, Settings.StatHeightRatio, Settings.StatSpacingRatio);
+            Text CHA = StatLine("CHA", m_Stats.CHATag, spdRT, 5, 6, Settings.StatHeightRatio, Settings.StatSpacingRatio);
 
             // Body.
-            m_SavingThrows.text = m_Stats.SavingThrowingTag;
-            m_SkillChecks.text = m_Stats.SkillCheckTag;
+            Text savingthrows = Property("Saves: ",  m_Stats.SavingThrowingTag, STR.rectTransform, Settings.DescriptionWidthRatio, Settings.DescriptionHeightRatio);
+            Text skillthrows = Property("Skills: ",  m_Stats.SkillCheckTag, savingthrows.rectTransform, Settings.DescriptionWidthRatio, Settings.DescriptionHeightRatio);
 
             // Attacks.
-            m_AttackText.text = m_Attack.ToTag(m_Stats);
+            Text aboveAttack = skillthrows;
+            for (int i = 0; i < m_Attacks.Length; i++) {
+                aboveAttack = Description(m_Attacks[i].Name + " ",  m_Attacks[i].ToTag(m_Stats), aboveAttack.rectTransform, Settings.AttackHeightRatio, Settings.AttackSpacingRatio);
+            }
 
         }
 
